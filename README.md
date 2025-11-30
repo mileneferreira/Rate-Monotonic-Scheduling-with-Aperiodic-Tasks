@@ -1,6 +1,6 @@
 # 🍄 👲🏻 🏰 👸🏼 🍄 🐢 💗 🏎️💨 ⭐ 🧱 👑 🪙
 # **Rate Monotonic Scheduling with Periodic and Aperiodic Tasks on ESP32**
-### _Mario Kart World Music Player using PWM + Buttons + Custom Task Infrastructure_
+### _Mario Kart World Music Player using PWM + Buttons + Custom Task_
 
 This project implements a full real‑time scheduling example on the ESP32, combining *periodic* and *aperiodic* tasks. It uses PWM audio generation, interrupt‑driven button input, and multiple blinking LEDs to simulate real-time behavior.
 
