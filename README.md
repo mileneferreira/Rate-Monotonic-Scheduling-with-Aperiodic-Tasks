@@ -10,7 +10,7 @@ The logic includes:
 - ⏱️ **Aperiodic tasks** → triggered by user interaction (buttons changing the music)  
 - 🎶 PWM buzzer playing Mario melodies  
 - 🧵 A custom task scheduling framework  
-- 🎚️ GPIO + PWM abstraction layers  
+- 🎚️ GPIO + PWM  
 
 ---
 
