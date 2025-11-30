@@ -8,7 +8,7 @@ The logic includes:
 
 - 🔄 **Periodic tasks** → simulated by LED blinking  
 - ⏱️ **Aperiodic tasks** → triggered by user interaction (buttons changing the music)  
-- 🎶 PWM buzzer playing Mario melodies  
+- 🎶 PWM buzzer playing Mario songs  
 - 🎚️ GPIO + PWM  
 
 ---
