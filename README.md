@@ -1,227 +1,213 @@
-Rate Monotonic Scheduling (Automatic RM + Aperiodic Tasks)
+# 🍄 👲🏻 🏰 👸🏼 🍄 🐢 💗 🏎️💨 ⭐ 🧱 👑 🪙
+# **Rate Monotonic Scheduling with Periodic and Aperiodic Tasks on ESP32**
+### _Mario Kart World Music Player using PWM + Buttons + Custom Task Infrastructure_
 
-This project implements a system that plays two Super Mario Bros songs using a PWM-driven buzzer on the ESP32. It includes button input, interrupts, periodic and aperiodic tasks, custom GPIO and PWM abstractions, and a custom-configurable thread management system.
+This project implements a full real‑time scheduling example on the ESP32, combining *periodic* and *aperiodic* tasks. It uses PWM audio generation, interrupt‑driven button input, and multiple blinking LEDs to simulate real-time behavior.
 
-This project implements a C++ system using:
+The logic includes:
 
-Audio generation via PWM (buzzer)
+- 🔄 **Periodic tasks** → simulated by LED blinking  
+- ⏱️ **Aperiodic tasks** → triggered by user interaction (buttons changing the music)  
+- 🎶 PWM buzzer playing Mario melodies  
+- 🧵 A custom task scheduling framework  
+- 🎚️ GPIO + PWM abstraction layers  
 
-Button reading via GPIO with interruption
+---
 
-Periodic tasks to play music
+# 📌 **Real-Time Scheduling concepts illustrated in this project**
 
-Aperiodic tasks triggered by interruptions
+## 🔄 **LEDs = Simulation of Periodic Tasks**
+The three LEDs operate on fixed intervals (1 Hz, 2 Hz, 4 Hz).  
+Each LED task runs on a strictly periodic schedule, representing deterministic, time‑triggered tasks in real‑time systems.
 
-Proprietary infrastructure for thread configuration and task state queries
+| LED | Pin | Frequency | Role |
+|-----|------|------------|--------|
+| Green | 15 | 1 Hz | Low‑priority periodic task |
+| Red | 2 | 2 Hz | Medium‑priority periodic task |
+| Yellow | 4 | 4 Hz | High‑frequency periodic task |
 
-Musical notes library with frequencies in Hz
+These tasks show how periodic activities behave under Rate Monotonic Scheduling (RMS):  
+**higher frequencies = higher rate = higher priority**.
 
-The system allows different melodies to be played when buttons are pressed, using PWM to generate the frequencies corresponding to the musical notes.
+---
 
-📁 File Organization
-1. /main/main.cpp
-File Function Entry point of the application. Configures GPIOs, PWM, tasks, and executes the main loop.
+## ⚡ **Music Selection = Aperiodic Tasks**
+Button presses do **not** follow any fixed schedule.  
+They occur at unpredictable, user‑defined times → making them *aperiodic events*.
 
-Main Elements
+- Button 1 → Switch to Regular Song  
+- Button 2 → Switch to Underworld Song  
 
-Buzzer Type: using Buzzer = Peripherals::PWM<23, TIMER_0, CHANNEL_0>; Uses pin 23 for the buzzer's PWM output.
+Each button is handled by an **Aperiodic Task**, triggered by a hardware interrupt.  
+This demonstrates real-time *event-driven* behavior.
 
-Periodic Tasks for Playing Music: A periodic task reads the current song and sends the frequency to the buzzer.
+> ✔ Aperiodic tasks change the state of the system  
+> ✔ Periodic tasks continue running independently  
+> ✔ Both coexist under the scheduling model
 
-Button Action:
+---
 
-Button 1 – GPIO 18 → Selects "Regular" music
+## 🎼 **Music Playback (Periodic Execution, Aperiodic Selection)**
 
-Button 2 – GPIO 19 → Selects "Underworld" music MusicChoice enum controls which song will be played.
+Even though the **selection of the song** is an *aperiodic event*, the **playback of notes** is done by a **periodic task**:
 
-Main Loop only keeps the program active: while (true) std::this_thread::sleep_for(1s);
+- Runs every **50 ms**
+- Reads the next note of the selected song
+- Sends frequency to the PWM buzzer
 
-2. Music Library (/inc/music/Song.h)
-Function Defines:
+| Component | Type |
+|-----------|--------|
+| Song selection | **Aperiodic task** (button) |
+| Audio playback | **Periodic task** (fixed interval) |
 
-Song type (span of frequencies)
+This dual behavior exemplify real‑time systems where aperiodic events modify periodic processes.
 
-Complete set of musical notes from B0 to B7
+---
 
-Ready-made songs: Regular Theme and Underworld Theme
+# 📂 **Project File Organization**
 
-Metrics Used
+## **1. `main/main.cpp`**
+📌 **Purpose:** Entry point of the system. Configures GPIOs, PWM, periodic/aperiodic tasks, and keeps the main loop alive.
 
-Notes are represented in Hz.
+### **Main Components**
 
-Example: static constexpr auto A4 = 440_Hz;
+#### 🔊 **Buzzer (PWM on GPIO 23)**
 
-Important Conversion
+```cpp
+using Buzzer = Peripherals::PWM<23, TIMER_0, CHANNEL_0>;
+```
 
-Frequency -> std::chrono::milliseconds → Determines the note's period to control duration.
+- Generates musical frequencies  
+- Used by the periodic music task
+- Pin used: **GPIO 23**
+- PWM output used to generate musical frequencies
 
-3. Peripherals
-3.1 GPIO.hpp
-Function Abstraction for digital inputs and outputs.
+#### 🎮 **Button Actions**
+| Button | Pin | Action |
+|--------|------|---------|
+| Button 1 | GPIO 18 | Selects **Regular Song** |
+| Button 2 | GPIO 19 | Selects **Underworld Song** |
 
-Main Features
+Controlled through the `MusicChoice` enum.
 
-GPIO::Output<pin> – simple write HIGH/LOW
+#### 🔁 **Main Loop**
+Keeps the program running:
+```cpp
+while (true) std::this_thread::sleep_for(1s);
+```
 
-GPIO::Input<pin, edge, pull> – configuration of:
+---
 
-pin
+#### 🎼 **Periodic Tasks**
+- Reads the currently selected song  
+- Sends the current frequency to the buzzer  
+- Advances to the next musical note  
 
-edge (RISING / FALLING)
+# 🔆 **LED Periodic Tasks**
 
-resistor (UP / DOWN)
+All LED blink tasks use:
 
-Interrupts
-
-register_interrupt(isr_handler, arg)
-
-unregister_interrupt()
-
-Usage in the Project
-
-Button 1 → GPIO 18
-
-Button 2 → GPIO 19
-
-Both configured with falling edge (FALLING) and Pull-up.
-
-3.2 PWM.hpp
-Function Generates frequencies using LEDC (ESP32's hardware PWM).
-
-Template PWM<pin, timer, channel> Parameters used in the project:
-
-Resource	Value
-pin	23
-timer	TIMER_0
-channel	CHANNEL_0
-base frequency	4000 Hz
-resolution	8 bits (0–255 duty)
-Main Functions
-
-start(): Initializes PWM channel.
-
-stop(): Turns off PWM (duty = 0).
-
-set_frequency(Frequency freq): Changes timer frequency.
-
-set_duty(Percentage duty): Defines duty cycle (0.0 to 1.0).
-
-4. Task System
-The project implements its own framework for task manipulation using std::thread + ESP-IDF pthread extensions.
-
-4.1 task/Config.h & Config.cpp
-Function Defines parameters when creating threads using std::thread, but applying ESP-IDF configurations:
-
-thread name
-
-priority
-
-target core
-
-stack size
-
-configuration inheritance
-
-Example Usage
-
-C++
-Task::Config()
-  .with_name("Music Task")
-  .with_priority(3)
-  .pinned_to_core(0)
-  .with_stack_size(8*1024);
-4.2 task/Query.h & Query.cpp
-Function Queries information of the current thread or the pthread configuration.
-
-this_thread API
-
-name()
-
-core()
-
-priority()
-
-free_stack()
-
-pthread API
-
-name()
-
-core()
-
-priority()
-
-stack_size()
-
-4.3 task/Aperiodic.hpp
-Function Allows the creation of a task that runs only when an interrupt occurs.
-
-How it Works
-
-Uses a semaphore (trigger_sem)
-
-The ISR releases the semaphore
-
-The associated thread executes the callback
-
-Usage in the Project Each button creates an aperiodic task:
-
-C++
-auto button1_handler = Task::Aperiodic<Button1>([](){ music_chosen = REGULAR; });
-4.4 task/Periodic.hpp
-Function Creates a periodic task that runs every provided interval.
-
-Example Task::Periodic(200ms, [](){ tocar_nota(); });
-
-In the Project:
-
-A periodic task reads the current song
-
-Sends the frequency to the buzzer via PWM
-
-Advances to the next note
-
-5. Utils
-5.1 Frequency.h
-Function Represents a frequency in Hz.
-
-Conversions
-
-to uint32_t
-
-to std::chrono::milliseconds (period = 1000/freq)
-
-5.2 Percentage.h
-Function Represents decimal duty-cycle values.
-
-Supports literal: 50_percent // becomes 0.50
-
-5.3 print.hpp
-Function Prints colored text to the terminal using std::print().
-
-🔌 Pins Used in the Project
-Function	Pin	Mode
-Buzzer PWM	GPIO 23	PWM Output
-Button 1	GPIO 18	Input, pull-up, FALLING
-Button 2	GPIO 19	Input, pull-up, FALLING
-🎵 General Code Operation
-Initializes PWM on pin 23 to control the buzzer.
-
-Loads songs defined in Song.h.
-
-Creates a periodic task that:
-
-reads the selected song
-
-updates the PWM to play each note
-
-Creates two aperiodic tasks linked to interrupts:
-
-Button 1 → switches to the Regular song
-
-Button 2 → switches to the Underworld song
-
-The system remains running in the infinite loop.
-
-
-
+```cpp
+template <uint8_t pin_number>
+auto toggle_gpio() -> void;
+```
+
+Created as:
+
+```cpp
+auto green_led = Task::Periodic(1_Hz, toggle_gpio<15>);
+auto red_led   = Task::Periodic(2_Hz, toggle_gpio<2>);
+auto yellow_led = Task::Periodic(4_Hz, toggle_gpio<4>);
+```
+
+These simulate the periodic task scheduling behavior under RM.
+
+---
+
+## 🎵 **2. Music Library (`inc/music/Song.h`)**
+
+Contains:
+- Notes from **B0 → B7**
+- Two classical Mario Kart World songs:
+  - Regular   
+  - Underworld
+
+#### 🎚️ Example note:
+```cpp
+static constexpr auto A4 = 440_Hz;
+```
+
+Songs are represented as `span<Frequency>`.
+
+---
+
+#### ⏱️ Important Conversion:
+**Frequency → duration (ms)**  
+Used to determine note timing in the periodic task.
+
+---
+
+## 🛠️ **3.GPIO and PWM**
+
+### `3.1. GPIO.hpp`**
+📌 Abstraction for digital inputs and outputs.
+
+**Main features:**
+- `GPIO::Output<pin>` → write HIGH/LOW  
+- `GPIO::Input<pin, edge, pull>` → configure:  
+  - pin  
+  - edge (RISING/FALLING)  
+  - pull resistor (UP/DOWN)
+
+**Interrupts**
+```cpp
+register_interrupt(isr_handler, arg);
+```
+
+Used for buttons + LEDs.
+
+### `3.2. PWM.hpp`**
+📌 Generates frequencies using ESP32's LEDC module.
+
+| Parameter | Value |
+|-----------|--------|
+| Pin | **23** |
+| Timer | `TIMER_0` |
+| Channel | `CHANNEL_0` |
+| Base frequency | 4000 Hz |
+| Resolution | 8‑bit |
+
+**Main functions:**
+- `start()`  
+- `stop()`  
+- `set_frequency(freq)`  
+- `set_duty(duty)`  
+
+## 🔌 **4. Pin Usage**
+
+| Component | Pin | Type |
+|-----------|------|-----------|
+| Buzzer | **23** | PWM Output |
+| Button 1 | **18** | Input (RISING, Pull‑down) |
+| Button 2 | **19** | Input (FALLING, Pull‑up) |
+| Green LED | **15** | Output |
+| Red LED | **2** | Output |
+| Yellow LED | **4** | Output |
+
+---
+
+🍄 👲🏻 🏰 👸🏼 🍄 🐢 💗 🏎️💨 ⭐ 🧱 👑 🪙
+## **5. Overall System Flow**
+
+1. PWM initialized on pin 23  
+2. Music library loads Regular + Underworld themes  
+3. Periodic task:  
+   - reads selected song  
+   - plays note via PWM  
+   - advances to next note  
+4. Aperiodic tasks:  
+   - Button 1 → selects Regular Song  
+   - Button 2 → selects Underworld Song  
+5. Infinite loop keeps the system alive  
+
+---
