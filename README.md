@@ -1,172 +1,137 @@
-# Rate Monotonic Scheduling (Automatic RM + Aperiodic Tasks)
-This project implements a system that plays two Super Mario Bros songs using a PWM-driven buzzer on the ESP32.  It includes button input, interrupts, periodic and aperiodic tasks, custom GPIO and PWM abstractions, and a custom-configurable thread management system.
+Rate Monotonic Scheduling (Automatic RM + Aperiodic Tasks)
 
-Projeto – Sistema de Música com PWM, GPIO e Gerenciamento de Tarefas (ESP32 + ESP-IDF + C++)
+This project implements a system that plays two Super Mario Bros songs using a PWM-driven buzzer on the ESP32. It includes button input, interrupts, periodic and aperiodic tasks, custom GPIO and PWM abstractions, and a custom-configurable thread management system.
 
-Este projeto implementa um sistema em C++ utilizando ESP-IDF com:
+This project implements a C++ system using:
 
-Geração de áudio por PWM (buzzer)
+Audio generation via PWM (buzzer)
 
-Leitura de botões via GPIO com interrupção
+Button reading via GPIO with interruption
 
-Tarefas periódicas para tocar músicas
+Periodic tasks to play music
 
-Tarefas aperiódicas acionadas por interrupções
+Aperiodic tasks triggered by interruptions
 
-Infraestrutura própria de configuração de threads e consultas ao estado de tarefas
+Proprietary infrastructure for thread configuration and task state queries
 
-Biblioteca de notas musicais com frequência em Hz
+Musical notes library with frequencies in Hz
 
-O sistema permite tocar diferentes melodias quando botões são pressionados, utilizando PWM para gerar as frequências correspondentes às notas musicais.
+The system allows different melodies to be played when buttons are pressed, using PWM to generate the frequencies corresponding to the musical notes.
 
-📁 Organização por Arquivos
+📁 File Organization
 1. /main/main.cpp
-Função do arquivo
+File Function Entry point of the application. Configures GPIOs, PWM, tasks, and executes the main loop.
 
-Ponto de entrada do aplicativo. Configura GPIOs, PWM, tarefas e executa o loop principal.
+Main Elements
 
-Principais elementos
+Buzzer Type: using Buzzer = Peripherals::PWM<23, TIMER_0, CHANNEL_0>; Uses pin 23 for the buzzer's PWM output.
 
-Tipo Buzzer
+Periodic Tasks for Playing Music: A periodic task reads the current song and sends the frequency to the buzzer.
 
-using Buzzer = Peripherals::PWM<23, TIMER_0, CHANNEL_0>;
+Button Action:
 
+Button 1 – GPIO 18 → Selects "Regular" music
 
-Usa pino 23 para saída PWM do buzzer.
+Button 2 – GPIO 19 → Selects "Underworld" music MusicChoice enum controls which song will be played.
 
-Tarefas periódicas para tocar música
-Uma task periodic lê a música atual e envia frequência ao buzzer.
+Main Loop only keeps the program active: while (true) std::this_thread::sleep_for(1s);
 
-Ação por botões
+2. Music Library (/inc/music/Song.h)
+Function Defines:
 
-Botão 1 – GPIO 18 → Seleciona música "Regular"
+Song type (span of frequencies)
 
-Botão 2 – GPIO 19 → Seleciona música "Underworld"
+Complete set of musical notes from B0 to B7
 
-MusicChoice enum controla qual música será tocada.
+Ready-made songs: Regular Theme and Underworld Theme
 
-Loop principal apenas mantém o programa ativo:
+Metrics Used
 
-while (true) std::this_thread::sleep_for(1s);
+Notes are represented in Hz.
 
-2. Biblioteca Music (/inc/music/Song.h)
-Função
+Example: static constexpr auto A4 = 440_Hz;
 
-Define:
+Important Conversion
 
-Tipo Song (span de frequências)
-
-Conjunto completo de notas musicais de B0 até B7
-
-Músicas prontas: Regular Theme e Underworld Theme
-
-Métricas utilizadas
-
-Notas são representadas em Hz
-
-Exemplo:
-
-static constexpr auto A4 = 440_Hz;
-
-Conversão importante
-
-Frequency -> std::chrono::milliseconds
-→ Determina o período da nota para controlar duração.
+Frequency -> std::chrono::milliseconds → Determines the note's period to control duration.
 
 3. Peripherals
 3.1 GPIO.hpp
-Função
+Function Abstraction for digital inputs and outputs.
 
-Abstração de entradas e saídas digitais.
+Main Features
 
-Principais recursos
+GPIO::Output<pin> – simple write HIGH/LOW
 
-GPIO::Output<pin> – simples write HIGH/LOW
+GPIO::Input<pin, edge, pull> – configuration of:
 
-GPIO::Input<pin, edge, pull> – configuração de:
+pin
 
-pino
-
-borda (RISING / FALLING)
+edge (RISING / FALLING)
 
 resistor (UP / DOWN)
 
-Interrupções
+Interrupts
 
 register_interrupt(isr_handler, arg)
 
 unregister_interrupt()
 
-Uso no projeto
+Usage in the Project
 
-Botão 1 → GPIO 18
+Button 1 → GPIO 18
 
-Botão 2 → GPIO 19
+Button 2 → GPIO 19
 
-Ambos configurados com borda de descida (FALLING) e Pull-up.
+Both configured with falling edge (FALLING) and Pull-up.
 
 3.2 PWM.hpp
-Função
+Function Generates frequencies using LEDC (ESP32's hardware PWM).
 
-Gera frequências usando LEDC (hardware PWM do ESP32).
+Template PWM<pin, timer, channel> Parameters used in the project:
 
-Template PWM<pin, timer, channel>
-
-Parâmetros usados no projeto:
-
-Recurso	Valor
-pino	23
+Resource	Value
+pin	23
 timer	TIMER_0
-canal	CHANNEL_0
-frequência base	4000 Hz
-resolução	8 bits (0–255 duty)
-Principais funções
-start()
+channel	CHANNEL_0
+base frequency	4000 Hz
+resolution	8 bits (0–255 duty)
+Main Functions
 
-Inicializa canal PWM.
+start(): Initializes PWM channel.
 
-stop()
+stop(): Turns off PWM (duty = 0).
 
-Desliga PWM (duty = 0).
+set_frequency(Frequency freq): Changes timer frequency.
 
-set_frequency(Frequency freq)
-
-Altera frequência do timer.
-
-set_duty(Percentage duty)
-
-Define razão cíclica (0.0 a 1.0).
+set_duty(Percentage duty): Defines duty cycle (0.0 to 1.0).
 
 4. Task System
-
-O projeto implementa um framework próprio para manipulação de tarefas com std::thread + ESP-IDF pthread extensions.
+The project implements its own framework for task manipulation using std::thread + ESP-IDF pthread extensions.
 
 4.1 task/Config.h & Config.cpp
-Função
+Function Defines parameters when creating threads using std::thread, but applying ESP-IDF configurations:
 
-Define parâmetros ao criar threads usando std::thread, mas aplicando configurações do ESP-IDF:
+thread name
 
-nome da thread
+priority
 
-prioridade
+target core
 
-core destino
+stack size
 
-tamanho de stack
+configuration inheritance
 
-herança de configuração
+Example Usage
 
-Exemplo de uso
+C++
 Task::Config()
   .with_name("Music Task")
   .with_priority(3)
   .pinned_to_core(0)
   .with_stack_size(8*1024);
-
 4.2 task/Query.h & Query.cpp
-Função
-
-Consultar informações da thread atual ou da configuração pthread.
+Function Queries information of the current thread or the pthread configuration.
 
 this_thread API
 
@@ -189,88 +154,74 @@ priority()
 stack_size()
 
 4.3 task/Aperiodic.hpp
-Função
+Function Allows the creation of a task that runs only when an interrupt occurs.
 
-Permite criar uma tarefa que roda somente quando uma interrupção ocorre.
+How it Works
 
-Como funciona
+Uses a semaphore (trigger_sem)
 
-Usa um semáforo (trigger_sem)
+The ISR releases the semaphore
 
-A ISR libera o semáforo
+The associated thread executes the callback
 
-A thread associada executa o callback
+Usage in the Project Each button creates an aperiodic task:
 
-Uso no projeto
-
-Cada botão cria uma tarefa aperiódica:
-
+C++
 auto button1_handler = Task::Aperiodic<Button1>([](){ music_chosen = REGULAR; });
-
 4.4 task/Periodic.hpp
-Função
+Function Creates a periodic task that runs every provided interval.
 
-Cria uma tarefa periódica que roda a cada intervalo fornecido.
+Example Task::Periodic(200ms, [](){ tocar_nota(); });
 
-Exemplo
-Task::Periodic(200ms, [](){ tocar_nota(); });
+In the Project:
 
+A periodic task reads the current song
 
-No projeto:
+Sends the frequency to the buzzer via PWM
 
-Uma tarefa periódica lê a música atual
-
-Envia a frequência ao buzzer via PWM
-
-Avança para a próxima nota
+Advances to the next note
 
 5. Utils
 5.1 Frequency.h
-Função
+Function Represents a frequency in Hz.
 
-Representa uma frequência em Hz.
+Conversions
 
-Conversões
+to uint32_t
 
-para uint32_t
-
-para std::chrono::milliseconds (período = 1000/freq)
+to std::chrono::milliseconds (period = 1000/freq)
 
 5.2 Percentage.h
-Função
+Function Represents decimal duty-cycle values.
 
-Representa valores decimais de duty-cycle.
-
-Suporta literal:
-
-50_percent  // vira 0.50
+Supports literal: 50_percent // becomes 0.50
 
 5.3 print.hpp
-Função
+Function Prints colored text to the terminal using std::print().
 
-Imprime texto colorido no terminal usando std::print().
+🔌 Pins Used in the Project
+Function	Pin	Mode
+Buzzer PWM	GPIO 23	PWM Output
+Button 1	GPIO 18	Input, pull-up, FALLING
+Button 2	GPIO 19	Input, pull-up, FALLING
+🎵 General Code Operation
+Initializes PWM on pin 23 to control the buzzer.
 
-🔌 Pinos Utilizados no Projeto
-Função	Pino	Modo
-Buzzer PWM	GPIO 23	Saída PWM
-Botão 1	GPIO 18	Entrada, pull-up, FALLING
-Botão 2	GPIO 19	Entrada, pull-up, FALLING
-🎵 Funcionamento Geral do Código
+Loads songs defined in Song.h.
 
-Inicializa o PWM no pino 23 para controlar o buzzer.
+Creates a periodic task that:
 
-Carrega músicas definidas em Song.h.
+reads the selected song
 
-Cria uma tarefa periódica que:
+updates the PWM to play each note
 
-lê a música selecionada
+Creates two aperiodic tasks linked to interrupts:
 
-atualiza o PWM para tocar cada nota
+Button 1 → switches to the Regular song
 
-Cria duas tarefas aperiódicas ligadas a interrupções:
+Button 2 → switches to the Underworld song
 
-Botão 1 → troca para música Regular
+The system remains running in the infinite loop.
 
-Botão 2 → troca para música Underworld
 
-O sistema permanece em execução no loop infinito.
+
