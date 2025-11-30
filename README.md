@@ -1,4 +1,4 @@
-# 🍄 👲🏻 🏰 👸🏼 🍄 🐢 💗 🏎️💨 ⭐ 🧱 👑 🪙
+# 🍄 👲🏻 🏰 👸🏼 🍄 🐢 💗 🏎️💨 ⭐ 🧱 👑 💙 🪙
 # **Rate Monotonic Scheduling with Periodic and Aperiodic Tasks on ESP32**
 ### _Mario Kart World Music Player using PWM + Buttons_
 
@@ -195,7 +195,7 @@ Used for buttons + LEDs.
 
 ---
 
-🍄 👲🏻 🏰 👸🏼 🍄 🐢 💗 🏎️💨 ⭐ 🧱 👑 🪙
+🍄 👲🏻 🏰 👸🏼 🍄 🐢 💗 🏎️💨 ⭐ 🧱 👑 💙 🪙
 ## **5. Overall System Flow**
 
 1. PWM initialized on pin 23  
