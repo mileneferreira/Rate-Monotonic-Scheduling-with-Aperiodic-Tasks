@@ -146,9 +146,9 @@ Used to determine note timing in the periodic task.
 
 ---
 
-## 🛠️ **3.GPIO and PWM**
+## 🛠️ **3. GPIO and PWM**
 
-### `3.1. GPIO.hpp`**
+### `3.1. GPIO.hpp`
 📌 Abstraction for digital inputs and outputs.
 
 **Main features:**
@@ -165,7 +165,7 @@ register_interrupt(isr_handler, arg);
 
 Used for buttons + LEDs.
 
-### `3.2. PWM.hpp`**
+### `3.2. PWM.hpp`
 📌 Generates frequencies using ESP32's LEDC module.
 
 | Parameter | Value |
